@@ -9,13 +9,10 @@ indicator(title="OzMa [2.5]", overlay=true)
 // EMA Inputs
 res1 = input.timeframe(title="Timeframe", defval="D", group="EMA Settings")
 length1 = input(title='Length', defval=50, group="EMA Settings")
-offset1 = input(title='Offset', defval=0, group="EMA Settings")
 res2 = input.timeframe(title="Timeframe", defval="W", group="EMA Settings")
 length2 = input(title='Length', defval=50, group="EMA Settings")
-offset2 = input(title='Offset', defval=0, group="EMA Settings")
 res3 = input.timeframe(title="Timeframe", defval="M", group="EMA Settings")
 length3 = input(title='Length', defval=10, group="EMA Settings")
-offset3 = input(title='Offset', defval=0, group="EMA Settings")
 useFilter = input(true, title='Use EMA Filter', group="EMA Settings")
 
 src = close
@@ -35,6 +32,8 @@ c = input(5, title='ATR Period', group="ATR Settings")
 EEEEEE = input(80, 'Length', group="ATR Settings")
 BBBB = input(27, 'FastLength', group="ATR Settings")
 BBBBB = input(50, 'SlowLength', group="ATR Settings")
+STC_B = input(25, 'Buy Threshold', group="ATR Settings")
+STC_S = input(75, 'Sell Threshold', group="ATR Settings")
 
 // Asset inputs
 asset = input.symbol(title = "Primary Source", defval="S5TH", group = "Asset Sources", inline = "source")
@@ -153,11 +152,11 @@ SemiBullish = useFilter ? ZeroLagMACD < signal and zlsma1 > zlsma2 : ZeroLagMACD
 Bearish = useFilter ? ZeroLagMACD < signal and zlsma1 < zlsma2 : ZeroLagMACD < signal and zlsma1 < zlsma2
 SemiBearish = useFilter ? ZeroLagMACD > signal and zlsma1 < zlsma2 : ZeroLagMACD < signal and zlsma1 > zlsma2
 
-buy = (src > xATRTrailingStop and above and mAAAAA < 25 and Bullish) or (src > xATRTrailingStop and above and mAAAAA >= 25 and Bullish) or (src > xATRTrailingStop and above and mAAAAA < 25 and SemiBearish) or (src > xATRTrailingStop and above and mAAAAA < 25 and SemiBullish)
-buyAdd = (src > xATRTrailingStop and above and mAAAAA >= 25 and Bearish) or (src > xATRTrailingStop and above and mAAAAA < 25 and Bearish) or (src > xATRTrailingStop and above and mAAAAA >= 25 and SemiBearish) or (src > xATRTrailingStop and above and mAAAAA >= 25 and SemiBullish)
+buy = (src > xATRTrailingStop and above and mAAAAA < STC_B and Bullish) or (src > xATRTrailingStop and above and mAAAAA >= STC_B and Bullish) or (src > xATRTrailingStop and above and mAAAAA < STC_B and SemiBearish) or (src > xATRTrailingStop and above and mAAAAA < STC_B and SemiBullish)
+buyAdd = (src > xATRTrailingStop and above and mAAAAA >= STC_B and Bearish) or (src > xATRTrailingStop and above and mAAAAA < STC_B and Bearish) or (src > xATRTrailingStop and above and mAAAAA >= STC_B and SemiBearish) or (src > xATRTrailingStop and above and mAAAAA >= STC_B and SemiBullish)
 
-sell = (src < xATRTrailingStop and below and mAAAAA > 75 and Bearish) or (src < xATRTrailingStop and below and mAAAAA <= 75 and Bearish) or (src < xATRTrailingStop and below and mAAAAA > 75 and SemiBullish) or (src < xATRTrailingStop and below and mAAAAA > 75 and SemiBearish)
-sellAdd = (src < xATRTrailingStop and below and mAAAAA <= 75 and Bullish) or (src < xATRTrailingStop and below and mAAAAA > 75 and Bullish) or (src < xATRTrailingStop and below and mAAAAA <= 75 and SemiBullish) or (src < xATRTrailingStop and below and mAAAAA <= 75 and SemiBearish)
+sell = (src < xATRTrailingStop and below and mAAAAA > STC_S and Bearish) or (src < xATRTrailingStop and below and mAAAAA <= STC_S and Bearish) or (src < xATRTrailingStop and below and mAAAAA > STC_S and SemiBullish) or (src < xATRTrailingStop and below and mAAAAA > STC_S and SemiBearish)
+sellAdd = (src < xATRTrailingStop and below and mAAAAA <= STC_S and Bullish) or (src < xATRTrailingStop and below and mAAAAA > STC_S and Bullish) or (src < xATRTrailingStop and below and mAAAAA <= STC_S and SemiBullish) or (src < xATRTrailingStop and below and mAAAAA <= STC_S and SemiBearish)
 
 // Trigger
 BuyA = ta.crossover(CLOSE,20)
@@ -221,9 +220,9 @@ else if BearishM
 // Create table
 table_data = table.new(position = position.top_right, columns = 2, rows = 3, border_width = 0, border_color=color.rgb(255, 255, 255, 50))
 
-table.cell(table_data, 0, 0, "Long", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 50))
-table.cell(table_data, 0, 1, "Medium", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 80))
-table.cell(table_data, 0, 2, "Short", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 50))
+table.cell(table_data, 0, 0, "L", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 50))
+table.cell(table_data, 0, 1, "M", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 80))
+table.cell(table_data, 0, 2, "S", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 50))
 
 // Long term rend
 if BuyA
