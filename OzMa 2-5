@@ -230,55 +230,55 @@ table.cell(table_data, 0, 2, "S", text_size= size.normal, text_halign = text.ali
 
 // Long term rend
 if BuyA
-    table.cell(table_data, 1, 0, "🟩", text_size= size.normal, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    table.cell(table_data, 1, 0, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
     last_signal := 1
 else if SellA
-    table.cell(table_data, 1, 0, "🟥", text_size= size.normal, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    table.cell(table_data, 1, 0, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
     last_signal := -1
 else
     if last_signal == 1
-        table.cell(table_data, 1, 0, "🟩", text_size= size.normal, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+        table.cell(table_data, 1, 0, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
     else if last_signal == -1
-        table.cell(table_data, 1, 0, "🟥", text_size= size.normal, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+        table.cell(table_data, 1, 0, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
     else
         table.cell(table_data, 1, 0, "⬜")
 
 // Medium term trade
 if BullishM
-    table.cell(table_data, 1, 1, "🟩", text_size= size.normal, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 80))
+    table.cell(table_data, 1, 1, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 80))
     last_m_signal := 1
 else if BearishM
-    table.cell(table_data, 1, 1, "🟥", text_size= size.normal, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 80))
+    table.cell(table_data, 1, 1, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 80))
     last_m_signal := -1
 else
     if last_m_signal == 1
-        table.cell(table_data, 1, 1, "🟩", text_size= size.normal, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 80))
+        table.cell(table_data, 1, 1, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 80))
     else if last_m_signal == -1
-        table.cell(table_data, 1, 1, "🟥", text_size= size.normal, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 80))
+        table.cell(table_data, 1, 1, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 80))
     else
         table.cell(table_data, 1, 1, "⬜")
 
 // Short term trade
 if buy
-    table.cell(table_data, 1, 2, "🟩", text_size= size.normal, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    table.cell(table_data, 1, 2, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
     last_s_signal := 1
 else if sell
-    table.cell(table_data, 1, 2, "🟥", text_size= size.normal, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    table.cell(table_data, 1, 2, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
     last_s_signal := -1
 else if buyAdd
-    table.cell(table_data, 1, 2, "🟢", text_size= size.normal, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    table.cell(table_data, 1, 2, "🟢", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
     last_s_signal := 2
 else if sellAdd
-    table.cell(table_data, 1, 2, "🔴", text_size= size.normal, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    table.cell(table_data, 1, 2, "🔴", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
     last_s_signal := -2    
 else
     if last_s_signal == 1
-        table.cell(table_data, 1, 2, "🟩", text_size= size.normal, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+        table.cell(table_data, 1, 2, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
     else if last_s_signal == -1
-        table.cell(table_data, 1, 2, "🟥", text_size= size.normal, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+        table.cell(table_data, 1, 2, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
     else if last_s_signal == 2
-        table.cell(table_data, 1, 2, "🟢", text_size= size.normal, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+        table.cell(table_data, 1, 2, "🟢", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
     else if last_s_signal == -2
-        table.cell(table_data, 1, 2, "🔴", text_size= size.normal, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+        table.cell(table_data, 1, 2, "🔴", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
     else
         table.cell(table_data, 1, 2, "⬜")
