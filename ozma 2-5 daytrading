@@ -1,0 +1,284 @@
+//@NSal
+//Description - ZeroLag EMA + ZeroLag MACD
+//@version=5
+indicator(title="OzMa [2.5]", overlay=true)
+
+//-----------------------------------------------------------------------------}
+//Settings
+//-----------------------------------------------------------------------------{
+// EMA Inputs
+res1 = input.timeframe(title="First Timeframe", defval="60", group="EMA Settings")
+length1 = input(title='First Length', defval=50, group="EMA Settings")
+res2 = input.timeframe(title="Second Timeframe", defval="240", group="EMA Settings")
+length2 = input(title='Second Length', defval=50, group="EMA Settings")
+res3 = input.timeframe(title="Third Timeframe", defval="D", group="EMA Settings")
+length3 = input(title='Third Length', defval=10, group="EMA Settings")
+useFilter = input(true, title='Use EMA Filter', group="EMA Settings")
+
+src = close
+
+// MACD
+source = close
+res = res1
+fastLength = input.int(12, title='Fast MM Length', minval=1, group="MACD Settings")
+slowLength = input.int(26, title='Slow MM Length', minval=1, group="MACD Settings")
+signalLength = input.int(9, title='Signal MM Length', minval=1, group="MACD Settings")
+MacdEmaLength = input.int(9, title='MACD EMA Length', minval=1, group="MACD Settings")
+useEma = input(true, title='Use EMA', group="MACD Settings")
+
+// ATR
+a = input.float(1.5, title='Key Value', group="ATR Settings")
+c = input(5, title='ATR Period', group="ATR Settings")
+EEEEEE = input(80, 'Length', group="ATR Settings")
+BBBB = input(27, 'FastLength', group="ATR Settings")
+BBBBB = input(50, 'SlowLength', group="ATR Settings")
+STC_B = input(25, 'Buy Threshold', group="ATR Settings")
+STC_S = input(75, 'Sell Threshold', group="ATR Settings")
+
+// Asset inputs
+asset = input.symbol(title = "Primary Source", defval="S5TH", group = "Asset Sources", inline = "source")
+
+// Retrieve data for asset
+CLOSE = request.security(asset, "1D", close)
+
+//-----------------------------------------------------------------------------}
+//Compute Trendfilter
+//-----------------------------------------------------------------------------{
+// EMA Calculations
+lsmaR1 = ta.ema(src, length1)
+lsma2R1 = ta.ema(lsmaR1, length1)
+lsma1 = request.security(syminfo.tickerid, res1, lsmaR1, gaps = barmerge.gaps_off)
+lsma21 = request.security(syminfo.tickerid, res1, lsma2R1, gaps = barmerge.gaps_off)
+eq1 = lsma1 - lsma21
+zlsma1 = lsma1 + eq1
+
+lsmaR2 = ta.ema(src, length2)
+lsma2R2 = ta.ema(lsmaR2, length2)
+lsma2 = request.security(syminfo.tickerid, res2, lsmaR2, gaps = barmerge.gaps_off)
+lsma22 = request.security(syminfo.tickerid, res2, lsma2R2, gaps = barmerge.gaps_off)
+eq2 = lsma2 - lsma22
+zlsma2 = lsma2 + eq2
+
+lsmaR3 = ta.ema(src, length3)
+lsma3R3 = ta.ema(lsmaR3, length3)
+lsma3 = request.security(syminfo.tickerid, res3, lsmaR3, gaps = barmerge.gaps_on)
+lsma33 = request.security(syminfo.tickerid, res3, lsma3R3, gaps = barmerge.gaps_on)
+eq3 = lsma3 - lsma33
+zlsma3 = lsma3 + eq3
+
+// MACD Calculations
+/// Fast line
+ema_1R = ta.ema(source, fastLength)
+sma_1R = ta.sma(source, fastLength)
+ema_1 = request.security(syminfo.tickerid, res, ema_1R, gaps = barmerge.gaps_off)
+sma_1 = request.security(syminfo.tickerid, res, sma_1R, gaps = barmerge.gaps_off)
+ma1 = useEma ? ema_1 : sma_1
+
+ema_2R = ta.ema(ma1, fastLength)
+sma_2R = ta.sma(ma1, fastLength)
+ema_2 = request.security(syminfo.tickerid, res, ema_2R, gaps = barmerge.gaps_off)
+sma_2 = request.security(syminfo.tickerid, res, sma_2R, gaps = barmerge.gaps_off)
+ma2 = useEma ? ema_2 : sma_2
+
+zerolagEMA = 2 * ma1 - ma2
+
+/// Slow line
+ema_3R = ta.ema(source, slowLength)
+sma_3R = ta.sma(source, slowLength)
+ema_3 = request.security(syminfo.tickerid, res, ema_3R, gaps = barmerge.gaps_off)
+sma_3 = request.security(syminfo.tickerid, res, sma_3R, gaps = barmerge.gaps_off)
+mas1 = useEma ? ema_3 : sma_3
+
+ema_4R = ta.ema(mas1, slowLength)
+sma_4R = ta.sma(mas1, slowLength)
+ema_4 = request.security(syminfo.tickerid, res, ema_4R, gaps = barmerge.gaps_off)
+sma_4 = request.security(syminfo.tickerid, res, sma_4R, gaps = barmerge.gaps_off)
+mas2 = useEma ? ema_4 : sma_4
+
+zerolagslowMA = 2 * mas1 - mas2
+
+/// MACD line
+ZeroLagMACD = zerolagEMA - zerolagslowMA
+
+/// Signal line
+emasig1R = ta.ema(ZeroLagMACD, signalLength)
+emasig2R = ta.ema(emasig1R, signalLength)
+emasig1 = request.security(syminfo.tickerid, res, emasig1R, gaps = barmerge.gaps_off)
+emasig2 = request.security(syminfo.tickerid, res, emasig2R, gaps = barmerge.gaps_off)
+signal = 2 * emasig1 - emasig2
+
+// ATR
+xATR = ta.atr(c)
+nLoss = a * xATR
+
+xATRTrailingStop = 0.0
+iff_1 = src > nz(xATRTrailingStop[1], 0) ? src - nLoss : src + nLoss
+iff_2 = src < nz(xATRTrailingStop[1], 0) and src[1] < nz(xATRTrailingStop[1], 0) ? math.min(nz(xATRTrailingStop[1]), src + nLoss) : iff_1
+xATRTrailingStop := src > nz(xATRTrailingStop[1], 0) and src[1] > nz(xATRTrailingStop[1], 0) ? math.max(nz(xATRTrailingStop[1]), src - nLoss) : iff_2
+
+ema = ta.ema(src, 1)
+above = ta.crossover(ema, xATRTrailingStop)
+below = ta.crossover(xATRTrailingStop, ema)
+
+// STC
+AAAA(BBB, BBBB, BBBBB) =>
+    fastMA = ta.ema(BBB, BBBB)
+    slowMA = ta.ema(BBB, BBBBB)
+    AAAA = fastMA - slowMA
+    AAAA
+
+AAAAA(EEEEEE, BBBB, BBBBB) =>
+    AAA = 0.5
+    var CCCCC = 0.0
+    var DDD = 0.0
+    var DDDDDD = 0.0
+    var EEEEE = 0.0
+    BBBBBB = AAAA(close, BBBB, BBBBB)
+    CCC = ta.lowest(BBBBBB, EEEEEE)
+    CCCC = ta.highest(BBBBBB, EEEEEE) - CCC
+    CCCCC := CCCC > 0 ? (BBBBBB - CCC) / CCCC * 100 : nz(CCCCC[1])
+    DDD := na(DDD[1]) ? CCCCC : DDD[1] + AAA * (CCCCC - DDD[1])
+    DDDD = ta.lowest(DDD, EEEEEE)
+    DDDDD = ta.highest(DDD, EEEEEE) - DDDD
+    DDDDDD := DDDDD > 0 ? (DDD - DDDD) / DDDDD * 100 : nz(DDDDDD[1])
+    EEEEE := na(EEEEE[1]) ? DDDDDD : EEEEE[1] + AAA * (DDDDDD - EEEEE[1])
+    EEEEE
+
+mAAAAA = AAAAA(EEEEEE, BBBB, BBBBB)
+
+// TrendFilter
+Bullish =  useFilter ? ZeroLagMACD > signal and zlsma1 > zlsma2 : ZeroLagMACD > signal and zlsma1 > zlsma2
+SemiBullish = useFilter ? ZeroLagMACD < signal and zlsma1 > zlsma2 : ZeroLagMACD > signal and zlsma1 < zlsma2
+Bearish = useFilter ? ZeroLagMACD < signal and zlsma1 < zlsma2 : ZeroLagMACD < signal and zlsma1 < zlsma2
+SemiBearish = useFilter ? ZeroLagMACD > signal and zlsma1 < zlsma2 : ZeroLagMACD < signal and zlsma1 > zlsma2
+
+buy = (src > xATRTrailingStop and above and mAAAAA < STC_B and Bullish) or (src > xATRTrailingStop and above and mAAAAA >= STC_B and Bullish) or (src > xATRTrailingStop and above and mAAAAA < STC_B and SemiBearish) or (src > xATRTrailingStop and above and mAAAAA < STC_B and SemiBullish)
+buyAdd = (src > xATRTrailingStop and above and mAAAAA >= STC_B and Bearish) or (src > xATRTrailingStop and above and mAAAAA < STC_B and Bearish) or (src > xATRTrailingStop and above and mAAAAA >= STC_B and SemiBearish) or (src > xATRTrailingStop and above and mAAAAA >= STC_B and SemiBullish)
+
+sell = (src < xATRTrailingStop and below and mAAAAA > STC_S and Bearish) or (src < xATRTrailingStop and below and mAAAAA <= STC_S and Bearish) or (src < xATRTrailingStop and below and mAAAAA > STC_S and SemiBullish) or (src < xATRTrailingStop and below and mAAAAA > STC_S and SemiBearish)
+sellAdd = (src < xATRTrailingStop and below and mAAAAA <= STC_S and Bullish) or (src < xATRTrailingStop and below and mAAAAA > STC_S and Bullish) or (src < xATRTrailingStop and below and mAAAAA <= STC_S and SemiBullish) or (src < xATRTrailingStop and below and mAAAAA <= STC_S and SemiBearish)
+
+// Trigger
+BuyA = ta.crossover(CLOSE,20)
+SellA = ta.crossunder(CLOSE,80)
+BullishM = ta.crossover(zlsma1,zlsma2)
+BearishM = ta.crossover(zlsma2,zlsma1)
+
+//-----------------------------------------------------------------------------}
+//Plot
+//-----------------------------------------------------------------------------{
+// BarColour
+NeutralColor = #56328f
+BearColor = #FF0000
+SemiBearColor = #990000
+BullColor = #00DB0A
+SemiBullColor = #008306
+
+plotshape(buy, title='Buy', style=shape.triangleup, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(sell, title='Sell', style=shape.triangledown, location=location.abovebar, color=BearColor, size=size.tiny)
+plotshape(buyAdd, title='Buy Add', style=shape.cross, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(sellAdd, title='Sell Add', style=shape.cross, location=location.abovebar, color=BearColor, size=size.tiny)
+barcolor(Bullish ? BullColor : Bearish ? BearColor : SemiBullish ? SemiBullColor : SemiBearish ? SemiBearColor : NeutralColor)
+plot(zlsma3, color = color.rgb(255, 255, 255, 55))
+
+// Plot
+plotshape(BuyA ? CLOSE : na, title='Buy', textcolor = color.white, style=shape.circle, location=location.belowbar, color=#00db0a, size=size.tiny)
+plotshape(SellA ? CLOSE : na, title='Sell', textcolor = color.white, style=shape.circle, location=location.abovebar, color=#f61100, size=size.tiny)
+
+//-----------------------------------------------------------------------------}
+//Alert
+//-----------------------------------------------------------------------------{
+if buy
+    alert("OzMa BUY", alert.freq_once_per_bar_close)
+else if sell
+    alert("OzMa SELL", alert.freq_once_per_bar_close)
+else if buyAdd
+    alert("OzMa BUY Add", alert.freq_once_per_bar_close)
+else if sellAdd
+    alert("OzMa SELL Add", alert.freq_once_per_bar_close)
+
+// Initialize last signal variable
+var last_signal = 0
+var last_s_signal = 0
+var last_m_signal = 0
+
+// Update last signal variable
+if BuyA
+    last_signal := 1
+else if SellA
+    last_signal := -1
+
+if buy
+    last_s_signal := 1
+else if sell
+    last_s_signal := -1
+else if buyAdd
+    last_s_signal := 2
+else if sellAdd
+    last_s_signal := -2
+
+if BullishM
+    last_m_signal := 1
+else if BearishM
+    last_m_signal := -1
+// Create table
+table_data = table.new(position = position.top_right, columns = 2, rows = 3, border_width = 0, border_color=color.rgb(255, 255, 255, 50))
+
+table.cell(table_data, 0, 0, "L", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 50))
+table.cell(table_data, 0, 1, "M", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 80))
+table.cell(table_data, 0, 2, "S", text_size= size.normal, text_halign = text.align_left, text_color=color.rgb(255, 255, 255, 40), bgcolor=color.rgb(102, 103, 104, 50))
+
+// Long term rend
+if BuyA
+    table.cell(table_data, 1, 0, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    last_signal := 1
+else if SellA
+    table.cell(table_data, 1, 0, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    last_signal := -1
+else
+    if last_signal == 1
+        table.cell(table_data, 1, 0, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    else if last_signal == -1
+        table.cell(table_data, 1, 0, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    else
+        table.cell(table_data, 1, 0, "⬜")
+
+// Medium term trade
+if BullishM
+    table.cell(table_data, 1, 1, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 80))
+    last_m_signal := 1
+else if BearishM
+    table.cell(table_data, 1, 1, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 80))
+    last_m_signal := -1
+else
+    if last_m_signal == 1
+        table.cell(table_data, 1, 1, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 80))
+    else if last_m_signal == -1
+        table.cell(table_data, 1, 1, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 80))
+    else
+        table.cell(table_data, 1, 1, "⬜")
+
+// Short term trade
+if buy
+    table.cell(table_data, 1, 2, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    last_s_signal := 1
+else if sell
+    table.cell(table_data, 1, 2, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    last_s_signal := -1
+else if buyAdd
+    table.cell(table_data, 1, 2, "🟢", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    last_s_signal := 2
+else if sellAdd
+    table.cell(table_data, 1, 2, "🔴", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    last_s_signal := -2    
+else
+    if last_s_signal == 1
+        table.cell(table_data, 1, 2, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    else if last_s_signal == -1
+        table.cell(table_data, 1, 2, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    else if last_s_signal == 2
+        table.cell(table_data, 1, 2, "🟢", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    else if last_s_signal == -2
+        table.cell(table_data, 1, 2, "🔴", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    else
+        table.cell(table_data, 1, 2, "⬜")
