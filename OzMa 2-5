@@ -1,7 +1,7 @@
 //@NSal
 //Description - ZeroLag EMA + ZeroLag MACD
 //@version=5
-indicator(title="OzMa [2.5]", overlay=true)
+indicator(title="OzMa [2.5.3]", overlay=true)
 
 //-----------------------------------------------------------------------------}
 //Settings
@@ -19,7 +19,7 @@ src = close
 
 // MACD
 source = close
-res = input.timeframe(title="Timeframe", defval="D", group="MACD Settings")
+res = res1
 fastLength = input.int(12, title='Fast MM Length', minval=1, group="MACD Settings")
 slowLength = input.int(26, title='Slow MM Length', minval=1, group="MACD Settings")
 signalLength = input.int(9, title='Signal MM Length', minval=1, group="MACD Settings")
@@ -36,10 +36,12 @@ STC_B = input(25, 'Buy Threshold', group="ATR Settings")
 STC_S = input(75, 'Sell Threshold', group="ATR Settings")
 
 // Asset inputs
-asset = input.symbol(title = "Primary Source", defval="S5TH", group = "Asset Sources", inline = "source")
+MainAsset = input.symbol(title = "Primary Source", defval="S5TH", group = "Asset Sources", inline = "source")
+MinorAsset = input.symbol(title = "Secondary Source", defval="S5FI", group = "Asset Sources", inline = "source")
 
 // Retrieve data for asset
-CLOSE = request.security(asset, "1D", close)
+CLOSE = request.security(MainAsset, "1D", close)
+SCLOSE = request.security(MinorAsset, "1D", close)
 
 //-----------------------------------------------------------------------------}
 //Compute Trendfilter
@@ -164,26 +166,94 @@ SellA = ta.crossunder(CLOSE,80)
 BullishM = ta.crossover(zlsma1,zlsma2)
 BearishM = ta.crossover(zlsma2,zlsma1)
 
+
+//-----------------------------------------------------------------------------}
+//Pin Bar
+//-----------------------------------------------------------------------------{
+
+bullishPinBar = 1
+bearishPinBar = -1
+
+xor(a, b) =>
+    a and not b or not a and b
+
+isLongBar(bodyLength, tailLength) =>
+    tailLength > 3 * bodyLength
+
+isBullishBar(oneThird) =>
+    bullishBody = close > open
+
+    float bodyLength = open > close ? high - close : high - open
+    float tailLength = open > close ? close - low : open - low
+
+    is_pin_bar = open >= oneThird and close >= oneThird
+
+    longTail = isLongBar(bodyLength, tailLength) ? true : close < open
+
+    is_pin_bar and (longTail or bullishBody)
+
+isBearishBar(oneThird) =>
+    bearishBody = close < open
+
+    float bodyLength = open > close ? high - close : high - open
+    float tailLength = open > close ? close - low : open - low
+
+    is_pin_bar = open <= oneThird and close <= oneThird
+
+    longTail = isLongBar(bodyLength, tailLength) ? true : close < open
+
+    is_pin_bar and (longTail or bearishBody)
+
+isPinBar() =>
+    range_1 = high - low
+    oneThird = range_1 / 3
+    oneThirdBullish = high - oneThird
+    oneThirdBearish = low + oneThird
+
+    bullishPinBar = isBullishBar(oneThirdBullish)
+    bearishPinBar = isBearishBar(oneThirdBearish)
+
+    result = xor(bullishPinBar, bearishPinBar) ? 1 : 0
+
+    result and bearishPinBar ? -1 : result
+
+
+isPinBarMade = isPinBar() == 1 or isPinBar() == -1 ? true : false
+
+PBullish = (isPinBar() == bullishPinBar and SCLOSE > 50 and CLOSE > 20)
+PBearish = (isPinBar() == bearishPinBar and SCLOSE < 50 and CLOSE < 80)
+
+MPBullish = (isPinBar() == bullishPinBar and SCLOSE < 50 and CLOSE > 20)
+MPBearish = (isPinBar() == bearishPinBar and SCLOSE > 50 and CLOSE < 80)
+
+SPBullish = (isPinBar() == bullishPinBar and CLOSE < 20)
+SPBearish = (isPinBar() == bearishPinBar and CLOSE > 80)
 //-----------------------------------------------------------------------------}
 //Plot
 //-----------------------------------------------------------------------------{
 // BarColour
 NeutralColor = #56328f
-BearColor = #FF0000
-SemiBearColor = #990000
-BullColor = #00DB0A
-SemiBullColor = #008306
+BearColor = color.rgb(242, 54, 69)
+SemiBearColor = color.rgb(242, 54, 69, 50)
+BullColor = color.rgb(8, 153, 129)
+SemiBullColor = color.rgb(8, 153, 129, 50)
 
 plotshape(buy, title='Buy', style=shape.triangleup, location=location.belowbar, color=BullColor, size=size.tiny)
 plotshape(sell, title='Sell', style=shape.triangledown, location=location.abovebar, color=BearColor, size=size.tiny)
 plotshape(buyAdd, title='Buy Add', style=shape.cross, location=location.belowbar, color=BullColor, size=size.tiny)
 plotshape(sellAdd, title='Sell Add', style=shape.cross, location=location.abovebar, color=BearColor, size=size.tiny)
 barcolor(Bullish ? BullColor : Bearish ? BearColor : SemiBullish ? SemiBullColor : SemiBearish ? SemiBearColor : NeutralColor)
-plot(zlsma3, color = color.rgb(255, 255, 255, 55))
+plot(zlsma3, color = color.rgb(255, 255, 255, 100))
 
 // Plot
-plotshape(BuyA ? CLOSE : na, title='Buy', textcolor = color.white, style=shape.circle, location=location.belowbar, color=#00db0a, size=size.tiny)
-plotshape(SellA ? CLOSE : na, title='Sell', textcolor = color.white, style=shape.circle, location=location.abovebar, color=#f61100, size=size.tiny)
+plotshape(BuyA ? CLOSE : na, title='Buy', textcolor = color.white, style=shape.circle, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(SellA ? CLOSE : na, title='Sell', textcolor = color.white, style=shape.circle, location=location.abovebar, color=BearColor, size=size.tiny)
+plotshape(isPinBar() == bullishPinBar and SCLOSE > 50 and CLOSE > 20, style=shape.circle, location=location.belowbar, color=BullColor)
+plotshape(isPinBar() == bearishPinBar and SCLOSE < 50 and CLOSE < 80, style=shape.circle, location=location.abovebar, color=BearColor)
+plotshape(isPinBar() == bullishPinBar and SCLOSE < 50 and CLOSE > 20, style=shape.diamond, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(isPinBar() == bearishPinBar and SCLOSE > 50 and CLOSE < 80, style=shape.diamond, location=location.abovebar, color=BearColor, size=size.tiny)
+plotshape(isPinBar() == bullishPinBar and CLOSE < 20, style=shape.square, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(isPinBar() == bearishPinBar and CLOSE > 80, style=shape.square, location=location.abovebar, color=BearColor, size=size.tiny)
 
 //-----------------------------------------------------------------------------}
 //Alert
@@ -196,6 +266,18 @@ else if buyAdd
     alert("OzMa BUY Add", alert.freq_once_per_bar_close)
 else if sellAdd
     alert("OzMa SELL Add", alert.freq_once_per_bar_close)
+else if PBullish
+    alert("OzMa PinBar BUY", alert.freq_once_per_bar_close)
+else if PBearish
+    alert("OzMa PinBar SELL", alert.freq_once_per_bar_close)  
+else if MPBullish
+    alert("OzMa Medium PinBar BUY", alert.freq_once_per_bar_close)
+else if MPBearish
+    alert("OzMa Medium PinBar SELL", alert.freq_once_per_bar_close)  
+else if SPBullish
+    alert("OzMa Strong PinBar BUY", alert.freq_once_per_bar_close)
+else if MPBearish
+    alert("OzMa Strong PinBar SELL", alert.freq_once_per_bar_close)  
 
 // Initialize last signal variable
 var last_signal = 0
@@ -230,55 +312,55 @@ table.cell(table_data, 0, 2, "S", text_size= size.normal, text_halign = text.ali
 
 // Long term rend
 if BuyA
-    table.cell(table_data, 1, 0, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    table.cell(table_data, 1, 0, "█", text_size= size.normal, text_halign = text.align_center, text_color=BullColor, bgcolor=color.rgb(102, 103, 104, 50))
     last_signal := 1
 else if SellA
-    table.cell(table_data, 1, 0, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    table.cell(table_data, 1, 0, "█", text_size= size.normal, text_halign = text.align_center, text_color=BearColor, bgcolor=color.rgb(102, 103, 104, 50))
     last_signal := -1
 else
     if last_signal == 1
-        table.cell(table_data, 1, 0, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+        table.cell(table_data, 1, 0, "█", text_size= size.normal, text_halign = text.align_center, text_color=BullColor, bgcolor=color.rgb(102, 103, 104, 50))
     else if last_signal == -1
-        table.cell(table_data, 1, 0, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+        table.cell(table_data, 1, 0, "█", text_size= size.normal, text_halign = text.align_center, text_color=BearColor, bgcolor=color.rgb(102, 103, 104, 50))
     else
-        table.cell(table_data, 1, 0, "⬜")
+        table.cell(table_data, 1, 0, "█")
 
 // Medium term trade
 if BullishM
-    table.cell(table_data, 1, 1, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 80))
+    table.cell(table_data, 1, 1, "█", text_size= size.normal, text_halign = text.align_center, text_color=BullColor, bgcolor=color.rgb(102, 103, 104, 80))
     last_m_signal := 1
 else if BearishM
-    table.cell(table_data, 1, 1, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 80))
+    table.cell(table_data, 1, 1, "█", text_size= size.normal, text_halign = text.align_center, text_color=BearColor, bgcolor=color.rgb(102, 103, 104, 80))
     last_m_signal := -1
 else
     if last_m_signal == 1
-        table.cell(table_data, 1, 1, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 80))
+        table.cell(table_data, 1, 1, "█", text_size= size.normal, text_halign = text.align_center, text_color=BullColor, bgcolor=color.rgb(102, 103, 104, 80))
     else if last_m_signal == -1
-        table.cell(table_data, 1, 1, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 80))
+        table.cell(table_data, 1, 1, "█", text_size= size.normal, text_halign = text.align_center, text_color=BearColor, bgcolor=color.rgb(102, 103, 104, 80))
     else
-        table.cell(table_data, 1, 1, "⬜")
+        table.cell(table_data, 1, 1, "█")
 
 // Short term trade
 if buy
-    table.cell(table_data, 1, 2, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    table.cell(table_data, 1, 2, "█", text_size= size.normal, text_halign = text.align_center, text_color=BullColor, bgcolor=color.rgb(102, 103, 104, 50))
     last_s_signal := 1
 else if sell
-    table.cell(table_data, 1, 2, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    table.cell(table_data, 1, 2, "█", text_size= size.normal, text_halign = text.align_center, text_color=BearColor, bgcolor=color.rgb(102, 103, 104, 50))
     last_s_signal := -1
 else if buyAdd
-    table.cell(table_data, 1, 2, "🟢", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+    table.cell(table_data, 1, 2, "⬤", text_size= size.normal, text_halign = text.align_center, text_color=BullColor, bgcolor=color.rgb(102, 103, 104, 50))
     last_s_signal := 2
 else if sellAdd
-    table.cell(table_data, 1, 2, "🔴", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+    table.cell(table_data, 1, 2, "⬤", text_size= size.normal, text_halign = text.align_center, text_color=BearColor, bgcolor=color.rgb(102, 103, 104, 50))
     last_s_signal := -2    
 else
     if last_s_signal == 1
-        table.cell(table_data, 1, 2, "🟩", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+        table.cell(table_data, 1, 2, "█", text_size= size.normal, text_halign = text.align_center, text_color=BullColor, bgcolor=color.rgb(102, 103, 104, 50))
     else if last_s_signal == -1
-        table.cell(table_data, 1, 2, "🟥", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+        table.cell(table_data, 1, 2, "█", text_size= size.normal, text_halign = text.align_center, text_color=BearColor, bgcolor=color.rgb(102, 103, 104, 50))
     else if last_s_signal == 2
-        table.cell(table_data, 1, 2, "🟢", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(0, 219, 11, 0), bgcolor=color.rgb(0, 219, 11, 60))
+        table.cell(table_data, 1, 2, "⬤", text_size= size.normal, text_halign = text.align_center, text_color=BullColor, bgcolor=color.rgb(102, 103, 104, 50))
     else if last_s_signal == -2
-        table.cell(table_data, 1, 2, "🔴", text_size= size.normal, text_halign = text.align_center, text_color=color.rgb(255, 0, 0, 0), bgcolor=color.rgb(255, 0, 0, 70))
+        table.cell(table_data, 1, 2, "⬤", text_size= size.normal, text_halign = text.align_center, text_color=BearColor, bgcolor=color.rgb(102, 103, 104, 50))
     else
-        table.cell(table_data, 1, 2, "⬜")
+        table.cell(table_data, 1, 2, "█")
