@@ -1,0 +1,389 @@
+//NSal
+//@version=5
+strategy("[STR] Trend Following [ADV][6395]", overlay=true, margin_long=100, margin_short=100)
+
+//-----------------------------------------------------------------------------}
+//Individual Asset Settings
+//-----------------------------------------------------------------------------{
+StdLength           = input(title="Stard Deviation Length",     defval=256, group="Asset Settings")
+TrendProp           = input(title="Trend Following Propotion",  defval=0.6, group="Asset Settings")
+OptLookBack         = input(title="Optimal Sizing Lookback",    defval=128, group="Asset Settings")
+
+//-----------------------------------------------------------------------------}
+//EMA Settings
+//-----------------------------------------------------------------------------{
+length1             = input(title='1st Length', defval=2, group="EMA Settings")
+length2             = input(title='2nd Length', defval=4, group="EMA Settings")
+length3             = input(title='3rd Length', defval=8, group="EMA Settings")
+length4             = input(title='4th Length', defval=16, group="EMA Settings")
+length5             = input(title='5th Length', defval=32, group="EMA Settings")
+length6             = input(title='6th Length', defval=64, group="EMA Settings")
+onlystr             = input(true, title="Show Only Strong Signal", group="EMA Settings")
+showtrend           = input(false, title="Show Trend Line", group="EMA Settings")
+zerolag             = input(true, title="Use Zero Lag", group="EMA Settings")
+src                 = close
+
+//-----------------------------------------------------------------------------}
+//ATR Settings
+//-----------------------------------------------------------------------------{
+a                   = input.float(1.5, title='Key Value', group="ATR Settings")
+c                   = input(5, title='ATR Period', group="ATR Settings")
+EEEEEE              = input(80, 'Length', group="ATR Settings")
+BBBB                = input(27, 'FastLength', group="ATR Settings")
+BBBBB               = input(50, 'SlowLength', group="ATR Settings")
+STC_B               = input(25, 'Buy Threshold', group="ATR Settings")
+STC_S               = input(75, 'Sell Threshold', group="ATR Settings")
+
+//-----------------------------------------------------------------------------}
+//Global Asset Settings
+//-----------------------------------------------------------------------------{
+MainAsset           = input.symbol(title = "Primary Source", defval="S5TH", group = "Asset Sources", inline = "source")
+MinorAsset          = input.symbol(title = "Secondary Source", defval="S5FI", group = "Asset Sources", inline = "source")
+
+// Retrieve data for asset
+CLOSE               = request.security(MainAsset, "1D", close)
+SCLOSE              = request.security(MinorAsset, "1D", close)
+
+//-----------------------------------------------------------------------------}
+//EMA Calculation
+//-----------------------------------------------------------------------------{
+//1st EMA
+lsmaR1              = ta.ema(src, length1)
+lsmaR1S             = ta.ema(lsmaR1, length1)
+eq1                 = lsmaR1 - lsmaR1S
+zlema1              = zerolag ? lsmaR1 + eq1 : ta.ema(src, length1)
+
+lsmaR1A             = ta.ema(src, (length1*4))
+lsmaR1SA            = ta.ema(lsmaR1A, (length1*4))
+eq1A                = lsmaR1A - lsmaR1SA
+zlema1A             = zerolag ? lsmaR1A + eq1A : ta.ema(src, (length1*4))
+
+//2nd EMA
+lsmaR2              = ta.ema(src, length2)
+lsmaR2S             = ta.ema(lsmaR2, length2)
+eq2                 = lsmaR2 - lsmaR2S
+zlema2              = zerolag ? lsmaR2 + eq2 : ta.ema(src, length2)
+
+lsmaR2A             = ta.ema(src, (length2*4))
+lsmaR2SA            = ta.ema(lsmaR2A, (length2*4))
+eq2A                = lsmaR2A - lsmaR2SA
+zlema2A             = zerolag ? lsmaR2A + eq2A : ta.ema(src, (length2*4))
+
+//3rd EMA
+lsmaR3              = ta.ema(src, length3)
+lsmaR3S             = ta.ema(lsmaR3, length3)
+eq3                 = lsmaR3 - lsmaR3S
+zlema3              = zerolag ? lsmaR3 + eq3 : ta.ema(src, length3)
+
+lsmaR3A             = ta.ema(src, (length3*4))
+lsmaR3SA            = ta.ema(lsmaR3A, (length3*4))
+eq3A                = lsmaR3A - lsmaR3SA
+zlema3A             = zerolag ? lsmaR3A + eq3A : ta.ema(src, (length3*4))
+
+//4th EMA
+lsmaR4              = ta.ema(src, length4)
+lsmaR4S             = ta.ema(lsmaR4, length4)
+eq4                 = lsmaR4 - lsmaR4S
+zlema4              = zerolag ? lsmaR4 + eq4 : ta.ema(src, length4)
+
+lsmaR4A             = ta.ema(src, (length4*4))
+lsmaR4SA            = ta.ema(lsmaR4A, (length4*4))
+eq4A                = lsmaR4A - lsmaR4SA
+zlema4A             = zerolag ? lsmaR4A + eq4A : ta.ema(src, (length4*4))
+
+//5th EMA
+lsmaR5              = ta.ema(src, length5)
+lsmaR5S             = ta.ema(lsmaR5, length5)
+eq5                 = lsmaR5 - lsmaR5S
+zlema5              = zerolag ? lsmaR5 + eq5 : ta.ema(src, length5)
+
+lsmaR5A             = ta.ema(src, (length5*4))
+lsmaR5SA            = ta.ema(lsmaR5A, (length5*4))
+eq5A                = lsmaR5A - lsmaR5SA
+zlema5A             = zerolag ? lsmaR5A + eq5A : ta.ema(src, (length5*4))
+
+//6th EMA
+lsmaR6              = ta.ema(src, length6)
+lsmaR6S             = ta.ema(lsmaR6, length6)
+eq6                 = lsmaR6 - lsmaR6S
+zlema6              = zerolag ? lsmaR6 + eq6 : ta.ema(src, length6)
+
+lsmaR6A             = ta.ema(src, (length6*4))
+lsmaR6SA            = ta.ema(lsmaR6A, (length6*4))
+eq6A                = lsmaR6A - lsmaR6SA
+zlema6A             = zerolag ? lsmaR6A + eq6A : ta.ema(src, (length6*4))
+
+//-----------------------------------------------------------------------------}
+//Trend Filter
+//-----------------------------------------------------------------------------{
+Trenddiff           = zlema6 - zlema6A
+Bullish             = Trenddiff[0] > Trenddiff[1] and Trenddiff >= 0
+Bearish             = Trenddiff[0] < Trenddiff[1] and Trenddiff < 0
+SemiBull            = Trenddiff[0] < Trenddiff[1] and Trenddiff >= 0
+SemiBear            = Trenddiff[0] > Trenddiff[1] and Trenddiff < 0
+
+//-----------------------------------------------------------------------------}
+//Individual Asset Calculation
+//-----------------------------------------------------------------------------{
+var float CappedForc1       = na
+var float CappedForc2       = na
+var float CappedForc3       = na
+var float CappedForc4       = na
+var float CappedForc5       = na
+var float CappedForc6       = na
+var float CappedForc        = na
+
+InstRisk                    = (ta.stdev(close, StdLength))/100
+DailyPVol                   = InstRisk / 16
+
+//1st Forecast
+//-----------------------------------------------------------------------------{
+RiskAdj1                    = (zlema1 - zlema1A) / DailyPVol
+ScaledForc1                 = RiskAdj1 * 12.1
+
+if ScaledForc1 <= -20
+    CappedForc1             := -20
+else if ScaledForc1 > -20 and ScaledForc1 < 20
+    CappedForc1             := ScaledForc1
+else if ScaledForc1 >= 20
+    CappedForc1             := 20
+
+//2nd Forecast
+//-----------------------------------------------------------------------------{
+RiskAdj2                    = (zlema2 - zlema2A) / DailyPVol
+ScaledForc2                 = RiskAdj2 * 8.53
+
+if ScaledForc2 <= -20
+    CappedForc2             := -20
+else if ScaledForc2 > -20 and ScaledForc2 < 20
+    CappedForc2             := ScaledForc2
+else if ScaledForc2 >= 20
+    CappedForc2             := 20
+
+//3rd Forecast
+//-----------------------------------------------------------------------------{
+RiskAdj3                    = (zlema3 - zlema3A) / DailyPVol
+ScaledForc3                 = RiskAdj3 * 5.95
+
+if ScaledForc3 <= -20
+    CappedForc3             := -20
+else if ScaledForc3 > -20 and ScaledForc3 < 20
+    CappedForc3             := ScaledForc3
+else if ScaledForc3 >= 20
+    CappedForc3             := 20
+
+//4th Forecast
+//-----------------------------------------------------------------------------{
+RiskAdj4                    = (zlema4 - zlema4A) / DailyPVol
+ScaledForc4                 = RiskAdj4 * 4.1
+
+if ScaledForc4 <= -20
+    CappedForc4             := -20
+else if ScaledForc4 > -20 and ScaledForc4 < 20
+    CappedForc4             := ScaledForc4
+else if ScaledForc4 >= 20
+    CappedForc4             := 20  
+
+//5th Forecast
+//-----------------------------------------------------------------------------{
+RiskAdj5                    = (zlema5 - zlema5A) / DailyPVol
+ScaledForc5                 = RiskAdj5 * 2.79
+
+if ScaledForc5 <= -20
+    CappedForc5             := -20
+else if ScaledForc5 > -20 and ScaledForc5 < 20
+    CappedForc5             := ScaledForc5
+else if ScaledForc5 >= 20
+    CappedForc5             := 20 
+
+//6th Forecast
+//-----------------------------------------------------------------------------{
+RiskAdj6                    = (zlema6 - zlema6A) / DailyPVol
+ScaledForc6                 = RiskAdj6 * 1.91
+
+if ScaledForc6 <= -20
+    CappedForc6             := -20
+else if ScaledForc6 > -20 and ScaledForc6 < 20
+    CappedForc6             := ScaledForc6
+else if ScaledForc6 >= 20
+    CappedForc6             := 20 
+
+//Forecast Combination
+//-----------------------------------------------------------------------------{
+ComCappedForc               = (CappedForc4 + CappedForc5 + CappedForc6)/3
+
+if ComCappedForc <= -20
+    CappedForc              := -20
+else if ComCappedForc > -20 and ComCappedForc < 20
+    CappedForc              := ComCappedForc
+else if ComCappedForc >= 20
+    CappedForc              := 20 
+
+// Raw Capped Forecast
+//-----------------------------------------------------------------------------{
+var float RawCappedForc     = na
+
+if Trenddiff >= 0
+    RawCappedForc           := math.abs(CappedForc / 10)
+else
+    RawCappedForc           := math.abs(CappedForc / 10) * -1
+
+// Optimal position
+//-----------------------------------------------------------------------------{
+OptimalSize                 = CappedForc/(10 * InstRisk)
+HighOpt                     = ta.highest(OptimalSize, OptLookBack)
+OptimalProp                 = OptimalSize / HighOpt
+
+// 6th Optimal position
+//-----------------------------------------------------------------------------{
+OptimalSize6                = CappedForc6/(10 * InstRisk)
+HighOpt6                    = ta.highest(OptimalSize6, OptLookBack)
+OptimalProp6                = OptimalSize6 / HighOpt6
+
+// Negative & Positive position
+//-----------------------------------------------------------------------------{
+var float OptimalPropA      = na
+var float OptimalProp6A     = na
+
+if Trenddiff >= 0
+    OptimalPropA            := math.abs(OptimalProp)
+    OptimalProp6A           := math.abs(OptimalProp6)
+else
+    OptimalPropA            := math.abs(OptimalProp) * -1
+    OptimalProp6A           := math.abs(OptimalProp6) * -1
+
+//-----------------------------------------------------------------------------}
+//ATR Calculation
+//-----------------------------------------------------------------------------{
+xATR                = ta.atr(c)
+nLoss               = a * xATR
+
+xATRTrailingStop = 0.0
+iff_1               = src > nz(xATRTrailingStop[1], 0) ? src - nLoss : src + nLoss
+iff_2               = src < nz(xATRTrailingStop[1], 0) and src[1] < nz(xATRTrailingStop[1], 0) ? math.min(nz(xATRTrailingStop[1]), src + nLoss) : iff_1
+xATRTrailingStop    := src > nz(xATRTrailingStop[1], 0) and src[1] > nz(xATRTrailingStop[1], 0) ? math.max(nz(xATRTrailingStop[1]), src - nLoss) : iff_2
+
+ema                 = ta.ema(src, 1)
+above               = ta.crossover(ema, xATRTrailingStop)
+below               = ta.crossover(xATRTrailingStop, ema)
+
+// STC
+AAAA(BBB, BBBB, BBBBB) =>
+    fastMA          = ta.ema(BBB, BBBB)
+    slowMA          = ta.ema(BBB, BBBBB)
+    AAAA            = fastMA - slowMA
+    AAAA
+
+AAAAA(EEEEEE, BBBB, BBBBB) =>
+    AAA             = 0.5
+    var CCCCC       = 0.0
+    var DDD         = 0.0
+    var DDDDDD      = 0.0
+    var EEEEE       = 0.0
+    BBBBBB          = AAAA(close, BBBB, BBBBB)
+    CCC             = ta.lowest(BBBBBB, EEEEEE)
+    CCCC            = ta.highest(BBBBBB, EEEEEE) - CCC
+    CCCCC           := CCCC > 0 ? (BBBBBB - CCC) / CCCC * 100 : nz(CCCCC[1])
+    DDD             := na(DDD[1]) ? CCCCC : DDD[1] + AAA * (CCCCC - DDD[1])
+    DDDD            = ta.lowest(DDD, EEEEEE)
+    DDDDD           = ta.highest(DDD, EEEEEE) - DDDD
+    DDDDDD          := DDDDD > 0 ? (DDD - DDDD) / DDDDD * 100 : nz(DDDDDD[1])
+    EEEEE           := na(EEEEE[1]) ? DDDDDD : EEEEE[1] + AAA * (DDDDDD - EEEEE[1])
+    EEEEE
+
+mAAAAA              = AAAAA(EEEEEE, BBBB, BBBBB)
+
+//-----------------------------------------------------------------------------}
+//Entry Signal
+//-----------------------------------------------------------------------------{
+buy                 = (src > xATRTrailingStop and above and mAAAAA < STC_B and Bullish) or (src > xATRTrailingStop and above and mAAAAA >= STC_B and Bullish)
+buyAdd              = onlystr ? na : (src > xATRTrailingStop and above and mAAAAA >= STC_B and Bearish) or (src > xATRTrailingStop and above and mAAAAA < STC_B and Bearish)
+
+sell                = (src < xATRTrailingStop and below and mAAAAA > STC_S and Bearish) or (src < xATRTrailingStop and below and mAAAAA <= STC_S and Bearish)
+sellAdd             = onlystr ? na : (src < xATRTrailingStop and below and mAAAAA <= STC_S and Bullish) or (src < xATRTrailingStop and below and mAAAAA > STC_S and Bullish)
+
+BuyA                = ta.crossover(CLOSE,20)
+SellA               = ta.crossunder(CLOSE,80)
+BullishM            = ta.crossover(zlema6,zlema6A)
+BearishM            = ta.crossover(zlema6,zlema6A)
+
+//-----------------------------------------------------------------------------}
+//Plot
+//-----------------------------------------------------------------------------{
+// BarColour
+NeutralColor        = #56328f
+BearColor           = color.rgb(242, 54, 69)
+SemiBearColor       = color.rgb(242, 54, 69, 50)
+BullColor           = color.rgb(8, 153, 129)
+SemiBullColor       = color.rgb(8, 153, 129, 50)
+
+//Style
+var col             = color.rgb(120, 123, 134, 100)
+var fillG           = color.rgb(120, 123, 134, 100)
+
+if Trenddiff[0] > Trenddiff[1] and Trenddiff >= 0 and showtrend == true
+    col             := BullColor
+    fillG           := color.rgb(8, 153, 129, 85)
+else if Trenddiff[0] < Trenddiff[1] and Trenddiff >= 0 and showtrend == true
+    col             := BullColor
+    fillG           := color.rgb(8, 153, 129, 95)
+else if Trenddiff[0] < Trenddiff[1] and Trenddiff < 0 and showtrend == true
+    col             := BearColor
+    fillG           := color.rgb(242, 54, 70, 85)
+else if Trenddiff[0] > Trenddiff[1] and Trenddiff < 0 and showtrend == true
+    col             := BearColor
+    fillG           := color.rgb(242, 54, 70, 95)
+else
+    col             := color.rgb(120, 123, 134, 100)
+    fillG           := color.rgb(120, 123, 134, 100)
+
+plotshape(buy, title='Buy', style=shape.triangleup, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(sell, title='Sell', style=shape.triangledown, location=location.abovebar, color=BearColor, size=size.tiny)
+plotshape(buyAdd, title='Buy Add', style=shape.cross, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(sellAdd, title='Sell Add', style=shape.cross, location=location.abovebar, color=BearColor, size=size.tiny)
+
+barcolor(Bullish ? BullColor : Bearish ? BearColor : SemiBull ? SemiBullColor : SemiBear ? SemiBearColor : NeutralColor)
+
+plotFast            = plot(zlema6, color=col, linewidth=1) 
+plotSlow            = plot(zlema6A, color=col, linewidth=1)
+
+fill(plotFast, plotSlow, color = fillG, fillgaps = true) 
+
+// Plot
+plotshape(BuyA ? CLOSE : na, title='Buy', textcolor = color.white, style=shape.circle, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(SellA ? CLOSE : na, title='Sell', textcolor = color.white, style=shape.circle, location=location.abovebar, color=BearColor, size=size.tiny)
+
+//-----------------------------------------------------------------------------}
+//Strategy
+//-----------------------------------------------------------------------------{ 
+longCondition       = Bullish
+
+// Long Condition
+if longCondition and strategy.position_size == 0.0
+    strategy.entry("L", strategy.long, qty = 1)
+if Bearish
+    strategy.close("L", qty_percent = 100)
+
+    
+// Calculate net profit and percentage profitable
+net_profit          = strategy.netprofit
+percent_profitable  = math.round(strategy.wintrades / (strategy.wintrades + strategy.losstrades), 2)
+    
+bgMColour           = color.rgb(0, 0, 0, 30)
+bgSColour           = color.rgb(0, 0, 0, 20)
+    
+if net_profit > 0
+    bgMColour       := color.rgb(8, 153, 129)
+    bgSColour       := color.rgb(8, 153, 129, 20)
+else
+    bgMColour       := color.rgb(242, 54, 69)
+    bgSColour       := color.rgb(242, 54, 69, 20)
+    
+// Create table
+table_data          = table.new(position = position.top_right, columns = 1, rows = 5, bgcolor = color.rgb(0, 0, 0, 100), frame_width = 1, border_width = 1)
+
+table.cell(table_data, 0, 0, 'TF782', bgcolor = color.rgb(255, 255, 255, 70), text_size = size.normal, text_color = color.rgb(255, 255, 255))   
+table.cell(table_data, 0, 1, str.tostring("$" + str.tostring(math.round(net_profit,0))), text_size = size.normal, bgcolor = bgMColour, text_color = color.rgb(255, 255, 255), text_halign  = text.align_center)
+table.cell(table_data, 0, 2, str.tostring(str.tostring(math.round(percent_profitable * 100,0)) + "%"), text_size = size.normal, bgcolor = bgSColour, text_color = color.rgb(255, 255, 255), text_halign  = text.align_center)
+table.cell(table_data, 0, 3, str.tostring(str.tostring(math.round(OptimalPropA * 100,0)) + "%"), bgcolor = color.rgb(255, 255, 255, 85), text_size = size.normal, text_color = color.rgb(255, 255, 255))
+table.cell(table_data, 0, 4, str.tostring(str.tostring(math.round(OptimalProp6A * 100,0)) + "%"), bgcolor = color.rgb(255, 255, 255, 85), text_size = size.normal, text_color = color.rgb(255, 255, 255))   
