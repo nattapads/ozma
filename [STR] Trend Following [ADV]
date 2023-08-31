@@ -308,7 +308,7 @@ BullishM            = ta.crossover(zlema6,zlema6A)
 BearishM            = ta.crossover(zlema6,zlema6A)
 
 //-----------------------------------------------------------------------------}
-//Plot
+//Style
 //-----------------------------------------------------------------------------{
 // BarColour
 NeutralColor        = #56328f
@@ -337,10 +337,16 @@ else
     col             := color.rgb(120, 123, 134, 100)
     fillG           := color.rgb(120, 123, 134, 100)
 
+//-----------------------------------------------------------------------------}
+//Entry Signal
+//-----------------------------------------------------------------------------{
 plotshape(buy, title='Buy', style=shape.triangleup, location=location.belowbar, color=BullColor, size=size.tiny)
 plotshape(sell, title='Sell', style=shape.triangledown, location=location.abovebar, color=BearColor, size=size.tiny)
 plotshape(buyAdd, title='Buy Add', style=shape.cross, location=location.belowbar, color=BullColor, size=size.tiny)
 plotshape(sellAdd, title='Sell Add', style=shape.cross, location=location.abovebar, color=BearColor, size=size.tiny)
+
+plotshape(BuyA ? CLOSE : na, title='Buy', textcolor = color.white, style=shape.circle, location=location.belowbar, color=BullColor, size=size.tiny)
+plotshape(SellA ? CLOSE : na, title='Sell', textcolor = color.white, style=shape.circle, location=location.abovebar, color=BearColor, size=size.tiny)
 
 barcolor(Bullish ? BullColor : Bearish ? BearColor : SemiBull ? SemiBullColor : SemiBear ? SemiBearColor : NeutralColor)
 
@@ -349,21 +355,13 @@ plotSlow            = plot(zlema6A, color=col, linewidth=1)
 
 fill(plotFast, plotSlow, color = fillG, fillgaps = true) 
 
-// Plot
-plotshape(BuyA ? CLOSE : na, title='Buy', textcolor = color.white, style=shape.circle, location=location.belowbar, color=BullColor, size=size.tiny)
-plotshape(SellA ? CLOSE : na, title='Sell', textcolor = color.white, style=shape.circle, location=location.abovebar, color=BearColor, size=size.tiny)
-
 //-----------------------------------------------------------------------------}
 //Strategy
 //-----------------------------------------------------------------------------{ 
-longCondition       = Bullish
-
-// Long Condition
-if longCondition and strategy.position_size == 0.0
+if Bullish and strategy.position_size == 0.0
     strategy.entry("L", strategy.long, qty = 1)
-if Bearish
+else if Bearish
     strategy.close("L", qty_percent = 100)
-
     
 // Calculate net profit and percentage profitable
 net_profit          = strategy.netprofit
@@ -379,7 +377,9 @@ else
     bgMColour       := color.rgb(242, 54, 69)
     bgSColour       := color.rgb(242, 54, 69, 20)
     
-// Create table
+//-----------------------------------------------------------------------------}
+//Summary Table
+//-----------------------------------------------------------------------------{ 
 table_data          = table.new(position = position.top_right, columns = 1, rows = 5, bgcolor = color.rgb(0, 0, 0, 100), frame_width = 1, border_width = 1)
 
 table.cell(table_data, 0, 0, 'TF782', bgcolor = color.rgb(255, 255, 255, 70), text_size = size.normal, text_color = color.rgb(255, 255, 255))   
